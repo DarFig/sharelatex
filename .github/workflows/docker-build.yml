@@ -1,0 +1,38 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main  # Puedes cambiar esta rama según tus necesidades
+  pull_request:
+    branches:
+      - main  # Puedes cambiar esta rama según tus necesidades
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.CR_PAT }}
+
+    - name: Build Docker image
+      working-directory: ./server-ce
+      run: make
+
+    - name: Tag Docker image
+      run: |
+        docker tag my-app:latest ghcr.io/${{ github.repository_owner }}/sharelatex:latest
+
+    - name: Push Docker image
+      run: |
+        docker push ghcr.io/${{ github.repository_owner }}/sharelatex:latest
