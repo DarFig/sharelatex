@@ -31,7 +31,7 @@ jobs:
 
     - name: Tag Docker image
       run: |
-        docker tag my-app:latest ghcr.io/darfig/sharelatex:latest
+        docker tag ${IMAGE}:latest ghcr.io/darfig/sharelatex:latest
 
     - name: Push Docker image
       run: |
