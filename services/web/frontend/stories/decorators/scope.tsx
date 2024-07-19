@@ -97,11 +97,6 @@ const initialize = () => {
       //
     },
     $broadcast: () => {},
-    $root: {
-      _references: {
-        keys: ['bibkeyExample'],
-      },
-    },
     ui: {
       chatOpen: true,
       pdfLayout: 'flat',
@@ -131,15 +126,6 @@ const initialize = () => {
       getCurrentDocId: () => 'foo',
       openDoc: (id: string, options: unknown) => {
         console.log('open doc', id, options)
-      },
-    },
-    metadataManager: {
-      metadata: {
-        state: {
-          documents: {
-            'test-file-id': { labels: ['sec:section-label'], packages: [] },
-          },
-        },
       },
     },
   }

@@ -60,6 +60,7 @@ import { useLayoutContext } from '@/shared/context/layout-context'
 import { debugConsole } from '@/utils/debugging'
 import { useMetadataContext } from '@/features/ide-react/context/metadata-context'
 import { useUserContext } from '@/shared/context/user-context'
+import { useReferencesContext } from '@/features/ide-react/context/references-context'
 
 function useCodeMirrorScope(view: EditorView) {
   const { fileTreeData } = useFileTreeData()
@@ -73,7 +74,7 @@ function useCodeMirrorScope(view: EditorView) {
 
   const { reviewPanelOpen, miniReviewPanelVisible } = useLayoutContext()
 
-  const { metadata } = useMetadataContext()
+  const metadata = useMetadataContext()
 
   const [loadingThreads] = useScopeValue<boolean>('loadingThreads')
 
@@ -107,7 +108,7 @@ function useCodeMirrorScope(view: EditorView) {
 
   const [visual] = useScopeValue<boolean>('editor.showVisual')
 
-  const [references] = useScopeValue<{ keys: string[] }>('$root._references')
+  const { referenceKeys } = useReferencesContext()
 
   // build the translation phrases
   const phrases = usePhrases()
@@ -213,26 +214,22 @@ function useCodeMirrorScope(view: EditorView) {
   // set the project metadata, mostly for use in autocomplete
   // TODO: read this data from the scope?
   const metadataRef = useRef({
-    documents: metadata.state.documents,
-    references: references.keys,
+    ...metadata,
+    referenceKeys,
     fileTreeData,
   })
 
-  // listen to project metadata (docs + packages) updates
+  // listen to project metadata (commands, labels and package names) updates
   useEffect(() => {
-    metadataRef.current.documents = metadata.state.documents
+    metadataRef.current = { ...metadataRef.current, ...metadata }
     view.dispatch(setMetadata(metadataRef.current))
-  }, [view, metadata.state.documents])
+  }, [view, metadata])
 
   // listen to project reference keys updates
   useEffect(() => {
-    const listener = (event: Event) => {
-      metadataRef.current.references = (event as CustomEvent<string[]>).detail
-      view.dispatch(setMetadata(metadataRef.current))
-    }
-    window.addEventListener('project:references', listener)
-    return () => window.removeEventListener('project:references', listener)
-  }, [view])
+    metadataRef.current.referenceKeys = referenceKeys
+    view.dispatch(setMetadata(metadataRef.current))
+  }, [view, referenceKeys])
 
   // listen to project root folder updates
   useEffect(() => {

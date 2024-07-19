@@ -12,6 +12,7 @@ export type DropdownProps = {
     | { xxl: 'start' | 'end' }
   as?: ElementType
   children: ReactNode
+  className?: string
   onSelect?: (eventKey: any, event: object) => any
   onToggle?: (show: boolean) => void
   show?: boolean
@@ -24,9 +25,9 @@ export type DropdownItemProps = PropsWithChildren<{
   disabled?: boolean
   eventKey?: string | number
   href?: string
-  leadingIcon?: string
+  leadingIcon?: string | React.ReactNode
   onClick?: React.MouseEventHandler
-  trailingIcon?: string
+  trailingIcon?: string | React.ReactNode
   variant?: 'default' | 'danger'
   className?: string
   role?: string

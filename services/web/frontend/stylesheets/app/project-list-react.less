@@ -417,11 +417,13 @@
       border: 0;
       text-align: left;
       color: @ol-type-color;
+      background-color: transparent;
       padding: 0;
       font-weight: bold;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
+      text-decoration: none;
 
       &:hover,
       &:focus {
@@ -436,6 +438,14 @@
 
       input[type='checkbox'] {
         margin-top: 5px;
+      }
+
+      .dash-cell-checkbox-wrapper {
+        label {
+          display: block;
+          margin: 0;
+          line-height: 1;
+        }
       }
     }
 
@@ -827,13 +837,6 @@
   }
 }
 
-.project-list-load-more {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
 .project-list-load-more-button {
   margin-bottom: @margin-sm;
 }
@@ -938,26 +941,29 @@
 
     .color-picker-more {
       color: @gray-dark;
-      margin: 6px 0 0 7px;
+      margin: 3px;
+      font-weight: bold;
 
       @media (max-width: @screen-xs-max) {
-        margin: 8px 0 0 9px;
+        margin: 5px;
       }
     }
 
     .color-picker-more-open {
       color: @gray-dark;
-      margin: 5px 0 0 5px;
+      margin: 3px;
+      font-weight: bold;
 
       @media (max-width: @screen-xs-max) {
-        margin: 7px 0 0 7px;
+        margin: 5px;
       }
     }
   }
 
   .color-picker-item-icon {
-    margin: 6px 0 0 6px;
+    margin: 4px;
     color: @white;
+    font-weight: bold;
   }
 
   @media (max-width: @screen-xs-max) {
@@ -966,7 +972,7 @@
     margin: 24px 24px;
 
     .color-picker-item-icon {
-      margin: 8px 0 0 8px;
+      margin: 6px;
       color: @white;
     }
   }

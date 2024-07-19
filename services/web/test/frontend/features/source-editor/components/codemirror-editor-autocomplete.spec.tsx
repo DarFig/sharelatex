@@ -1,6 +1,5 @@
 import { Folder } from '../../../../../types/folder'
 import { docId, mockDocContent } from '../helpers/mock-doc'
-import { Metadata } from '../../../../../types/metadata'
 import { mockScope } from '../helpers/mock-scope'
 import { EditorProviders } from '../../../helpers/editor-providers'
 import CodeMirrorEditor from '../../../../../frontend/js/features/source-editor/components/codemirror-editor'
@@ -9,6 +8,7 @@ import { User, UserId } from '../../../../../types/user'
 import { TestContainer } from '../helpers/test-container'
 import { FC } from 'react'
 import { MetadataContext } from '@/features/ide-react/context/metadata-context'
+import { ReferencesContext } from '@/features/ide-react/context/references-context'
 
 describe('autocomplete', { scrollBehavior: false }, function () {
   beforeEach(function () {
@@ -62,42 +62,12 @@ describe('autocomplete', { scrollBehavior: false }, function () {
       },
     ]
 
-    const metadataManager: { metadata: { state: Metadata } } = {
-      metadata: {
-        state: {
-          documents: {
-            [docId]: {
-              labels: ['fig:frog'],
-              // TODO: add tests for packages and referencesKeys autocompletions
-              packages: {
-                foo: [
-                  {
-                    caption: 'a caption',
-                    meta: 'foo-cmd',
-                    score: 0.1,
-                    snippet: 'a caption{$1}',
-                  },
-                ],
-              },
-            },
-          },
-          references: [],
-          fileTreeData: rootFolder[0],
-        },
-      },
-    }
-
     const scope = mockScope()
-    scope.$root._references.keys = ['foo']
     scope.project.rootFolder = rootFolder
 
     cy.mount(
       <TestContainer>
-        <EditorProviders
-          scope={scope}
-          metadataManager={metadataManager}
-          rootFolder={rootFolder as any}
-        >
+        <EditorProviders scope={scope} rootFolder={rootFolder as any}>
           <CodeMirrorEditor />
         </EditorProviders>
       </TestContainer>
@@ -238,41 +208,11 @@ describe('autocomplete', { scrollBehavior: false }, function () {
       },
     ]
 
-    const metadataManager: { metadata: { state: Metadata } } = {
-      metadata: {
-        state: {
-          documents: {
-            [docId]: {
-              labels: ['fig:frog'],
-              // TODO: add tests for packages and referencesKeys autocompletions
-              packages: {
-                foo: [
-                  {
-                    caption: 'a caption',
-                    meta: 'foo-cmd',
-                    score: 0.1,
-                    snippet: 'a caption{$1}',
-                  },
-                ],
-              },
-            },
-          },
-          references: [],
-          fileTreeData: rootFolder[0],
-        },
-      },
-    }
-
     const scope = mockScope()
-    scope.$root._references.keys = ['foo']
 
     cy.mount(
       <TestContainer>
-        <EditorProviders
-          scope={scope}
-          metadataManager={metadataManager}
-          rootFolder={rootFolder as any}
-        >
+        <EditorProviders scope={scope} rootFolder={rootFolder as any}>
           <CodeMirrorEditor />
         </EditorProviders>
       </TestContainer>
@@ -358,33 +298,15 @@ describe('autocomplete', { scrollBehavior: false }, function () {
       },
     ]
 
+    const metadata = {
+      commands: [],
+      labels: new Set<string>(),
+      packageNames: new Set(['foo']),
+    }
+
     const MetadataProvider: FC = ({ children }) => {
       return (
-        <MetadataContext.Provider
-          value={{
-            metadata: {
-              state: {
-                documents: {
-                  [docId]: {
-                    labels: [],
-                    packages: {
-                      foo: [
-                        {
-                          caption: 'a caption',
-                          meta: 'foo-cmd',
-                          score: 0.1,
-                          snippet: 'a caption{$1}',
-                        },
-                      ],
-                    },
-                  },
-                },
-              },
-              getAllLabels: () => [],
-              getAllPackages: () => ({ foo: {} }),
-            },
-          }}
-        >
+        <MetadataContext.Provider value={metadata}>
           {children}
         </MetadataContext.Provider>
       )
@@ -450,28 +372,17 @@ describe('autocomplete', { scrollBehavior: false }, function () {
     ]
 
     const scope = mockScope()
-    scope.$root._references.keys = ['ref-1', 'ref-2', 'ref-3']
 
-    const MetadataProvider: FC = ({ children }) => {
+    const ReferencesProvider: FC = ({ children }) => {
       return (
-        <MetadataContext.Provider
+        <ReferencesContext.Provider
           value={{
-            metadata: {
-              state: {
-                documents: {
-                  [docId]: {
-                    labels: [],
-                    packages: {},
-                  },
-                },
-              },
-              getAllLabels: () => [],
-              getAllPackages: () => ({}),
-            },
+            referenceKeys: new Set(['ref-1', 'ref-2', 'ref-3']),
+            indexAllReferences: cy.stub(),
           }}
         >
           {children}
-        </MetadataContext.Provider>
+        </ReferencesContext.Provider>
       )
     }
 
@@ -479,7 +390,7 @@ describe('autocomplete', { scrollBehavior: false }, function () {
       <TestContainer>
         <EditorProviders
           scope={scope}
-          providers={MetadataProvider}
+          providers={{ ReferencesProvider }}
           rootFolder={rootFolder as any}
         >
           <CodeMirrorEditor />
@@ -532,34 +443,11 @@ describe('autocomplete', { scrollBehavior: false }, function () {
     ]
 
     const scope = mockScope()
-    scope.$root._references.keys = ['foo']
     scope.project.rootFolder = rootFolder
-
-    const MetadataProvider: FC = ({ children }) => {
-      return (
-        <MetadataContext.Provider
-          value={{
-            metadata: {
-              state: {
-                documents: {},
-              },
-              getAllLabels: () => [],
-              getAllPackages: () => ({}),
-            },
-          }}
-        >
-          {children}
-        </MetadataContext.Provider>
-      )
-    }
 
     cy.mount(
       <TestContainer>
-        <EditorProviders
-          scope={scope}
-          rootFolder={rootFolder as any}
-          providers={MetadataProvider}
-        >
+        <EditorProviders scope={scope} rootFolder={rootFolder as any}>
           <CodeMirrorEditor />
         </EditorProviders>
       </TestContainer>
@@ -824,33 +712,22 @@ describe('autocomplete', { scrollBehavior: false }, function () {
   it('displays unique completions for commands', function () {
     const scope = mockScope()
 
+    const metadata = {
+      commands: [
+        {
+          caption: '\\label{}', // label{} is also included in top-hundred-snippets
+          meta: 'amsmath-cmd',
+          score: 1,
+          snippet: '\\label{$1}',
+        },
+      ],
+      labels: new Set<string>(),
+      packageNames: new Set<string>('amsmath'),
+    }
+
     const MetadataProvider: FC = ({ children }) => {
       return (
-        <MetadataContext.Provider
-          value={{
-            metadata: {
-              state: {
-                documents: {
-                  [docId]: {
-                    labels: [],
-                    packages: {
-                      amsmath: [
-                        {
-                          caption: '\\label{}',
-                          meta: 'amsmath-cmd',
-                          score: 1,
-                          snippet: '\\label{$1}',
-                        },
-                      ],
-                    },
-                  },
-                },
-              },
-              getAllLabels: () => [],
-              getAllPackages: () => ({}),
-            },
-          }}
-        >
+        <MetadataContext.Provider value={metadata}>
           {children}
         </MetadataContext.Provider>
       )
@@ -1030,34 +907,11 @@ describe('autocomplete', { scrollBehavior: false }, function () {
     ]
 
     const scope = mockScope()
-    scope.$root._references.keys = ['foo']
     scope.project.rootFolder = rootFolder
-
-    const MetadataProvider: FC = ({ children }) => {
-      return (
-        <MetadataContext.Provider
-          value={{
-            metadata: {
-              state: {
-                documents: {},
-              },
-              getAllLabels: () => [],
-              getAllPackages: () => ({}),
-            },
-          }}
-        >
-          {children}
-        </MetadataContext.Provider>
-      )
-    }
 
     cy.mount(
       <TestContainer>
-        <EditorProviders
-          scope={scope}
-          providers={MetadataProvider}
-          rootFolder={rootFolder as any}
-        >
+        <EditorProviders scope={scope} rootFolder={rootFolder as any}>
           <CodeMirrorEditor />
         </EditorProviders>
       </TestContainer>
