@@ -2,7 +2,7 @@ const SandboxedModule = require('sandboxed-module')
 const path = require('path')
 const sinon = require('sinon')
 const { expect } = require('chai')
-const { ObjectId } = require('mongodb')
+const { ObjectId } = require('mongodb-legacy')
 
 const MODULE_PATH = path.join(
   __dirname,
@@ -131,6 +131,11 @@ describe('ProjectController', function () {
         isUserInvitedReadWriteMemberOfProject: sinon.stub().resolves(true),
       },
     }
+    this.CollaboratorsHandler = {
+      promises: {
+        setCollaboratorPrivilegeLevel: sinon.stub().resolves(),
+      },
+    }
     this.ProjectEntityHandler = {}
     this.UserGetter = {
       getUserFullEmails: sinon.stub().yields(null, []),
@@ -197,12 +202,19 @@ describe('ProjectController', function () {
     this.TutorialHandler = {
       getInactiveTutorials: sinon.stub().returns([]),
     }
+    this.OnboardingDataCollectionManager = {
+      getOnboardingDataValue: sinon.stub().resolves(null),
+    }
+    this.Modules = {
+      promises: { hooks: { fire: sinon.stub().resolves() } },
+    }
 
     this.ProjectController = SandboxedModule.require(MODULE_PATH, {
       requires: {
-        mongodb: { ObjectId },
+        'mongodb-legacy': { ObjectId },
         '@overleaf/settings': this.settings,
         '@overleaf/metrics': this.Metrics,
+        '../Collaborators/CollaboratorsHandler': this.CollaboratorsHandler,
         '../SplitTests/SplitTestHandler': this.SplitTestHandler,
         '../SplitTests/SplitTestSessionHandler': this.SplitTestSessionHandler,
         './ProjectDeleter': this.ProjectDeleter,
@@ -245,11 +257,14 @@ describe('ProjectController', function () {
         '../Survey/SurveyHandler': this.SurveyHandler,
         './ProjectAuditLogHandler': this.ProjectAuditLogHandler,
         '../Tutorial/TutorialHandler': this.TutorialHandler,
+        '../OnboardingDataCollection/OnboardingDataCollectionManager':
+          this.OnboardingDataCollectionManager,
         '../User/UserUpdater': {
           promises: {
             updateUser: sinon.stub().resolves(),
           },
         },
+        '../../infrastructure/Modules': this.Modules,
       },
     })
 
@@ -989,7 +1004,7 @@ describe('ProjectController', function () {
       it('should not show for a user who is a member of a group subscription', function (done) {
         this.LimitationsManager.promises.userIsMemberOfGroupSubscription = sinon
           .stub()
-          .resolves(true)
+          .resolves({ isMember: true })
         this.res.render = (pageName, opts) => {
           expect(opts.showUpgradePrompt).to.equal(false)
           done()
@@ -1010,9 +1025,13 @@ describe('ProjectController', function () {
 
     describe('link sharing changes active', function () {
       beforeEach(function () {
-        this.SplitTestHandler.promises.getAssignmentForUser.resolves({
-          variant: 'active',
-        })
+        this.SplitTestHandler.promises.getAssignmentForUser.callsFake(
+          async (userId, test) => {
+            if (test === 'link-sharing-warning') {
+              return { variant: 'active' }
+            }
+          }
+        )
       })
 
       describe('when user is a read write token member (and not already a named editor)', function () {
@@ -1048,6 +1067,57 @@ describe('ProjectController', function () {
 
         it('should not redirect to the sharing-updates page, and should load the editor', function (done) {
           this.res.render = (pageName, opts) => {
+            done()
+          }
+          this.ProjectController.loadEditor(this.req, this.res)
+        })
+      })
+    })
+
+    describe('link sharing enforcement', function () {
+      describe('when not active (default)', function () {
+        beforeEach(function () {
+          this.SplitTestHandler.promises.getAssignmentForUser.callsFake(
+            async (userId, test) => {
+              if (test === 'link-sharing-warning') {
+                return { variant: 'active' }
+              } else if (test === 'link-sharing-enforcement') {
+                return { variant: 'default' }
+              }
+            }
+          )
+        })
+
+        it('should not call the collaborator limit enforcement check', function (done) {
+          this.res.render = (pageName, opts) => {
+            this.Modules.promises.hooks.fire.should.not.have.been.calledWith(
+              'enforceCollaboratorLimit'
+            )
+            done()
+          }
+          this.ProjectController.loadEditor(this.req, this.res)
+        })
+      })
+
+      describe('when active', function () {
+        beforeEach(function () {
+          this.SplitTestHandler.promises.getAssignmentForUser.callsFake(
+            async (userId, test) => {
+              if (test === 'link-sharing-warning') {
+                return { variant: 'active' }
+              } else if (test === 'link-sharing-enforcement') {
+                return { variant: 'active' }
+              }
+            }
+          )
+        })
+
+        it('should call the collaborator limit enforcement check', function (done) {
+          this.res.render = (pageName, opts) => {
+            this.Modules.promises.hooks.fire.should.have.been.calledWith(
+              'enforceCollaboratorLimit',
+              this.project_id
+            )
             done()
           }
           this.ProjectController.loadEditor(this.req, this.res)

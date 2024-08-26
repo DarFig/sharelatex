@@ -5,7 +5,7 @@ const { setTimeout } = require('timers/promises')
 const pProps = require('p-props')
 const logger = require('@overleaf/logger')
 const { expressify } = require('@overleaf/promise-utils')
-const { ObjectId } = require('mongodb')
+const { ObjectId } = require('mongodb-legacy')
 const ProjectDeleter = require('./ProjectDeleter')
 const ProjectDuplicator = require('./ProjectDuplicator')
 const ProjectCreationHandler = require('./ProjectCreationHandler')
@@ -41,9 +41,9 @@ const ProjectAuditLogHandler = require('./ProjectAuditLogHandler')
 const PublicAccessLevels = require('../Authorization/PublicAccessLevels')
 const TagsHandler = require('../Tags/TagsHandler')
 const TutorialHandler = require('../Tutorial/TutorialHandler')
+const OnboardingDataCollectionManager = require('../OnboardingDataCollection/OnboardingDataCollectionManager')
 const UserUpdater = require('../User/UserUpdater')
-const { checkUserPermissions } =
-  require('../Authorization/PermissionsManager').promises
+const Modules = require('../../infrastructure/Modules')
 const UserGetter = require('../User/UserGetter')
 
 /**
@@ -324,21 +324,25 @@ const _ProjectController = {
     const splitTests = [
       !anonymous && 'bib-file-tpr-prompt',
       'compile-log-events',
+      'math-preview',
       'null-test-share-modal',
       'paywall-cta',
       'pdf-caching-cached-url-lookup',
       'pdf-caching-mode',
       'pdf-caching-prefetch-large',
       'pdf-caching-prefetching',
-      'pdf-controls',
       'pdf-presentation-mode',
       'pdfjs-40',
       'personal-access-token',
       'revert-file',
+      'revert-project',
       'review-panel-redesign',
+      !anonymous && 'ro-mirror-on-client',
       'track-pdf-download',
       !anonymous && 'writefull-oauth-promotion',
       'ieee-stylesheet',
+      'write-and-cite',
+      'default-visual-for-beginners',
     ].filter(Boolean)
 
     const getUserValues = async userId =>
@@ -381,6 +385,13 @@ const _ProjectController = {
               userId,
               projectId
             ),
+          usedLatex: OnboardingDataCollectionManager.getOnboardingDataValue(
+            userId,
+            'usedLatex'
+          ).catch(err => {
+            logger.error({ err, userId })
+            return null
+          }),
         })
       )
     const splitTestAssignments = {}
@@ -404,11 +415,15 @@ const _ProjectController = {
           tokens: 1,
           tokenAccessReadAndWrite_refs: 1, // used for link sharing analytics
           collaberator_refs: 1, // used for link sharing analytics
+          pendingEditor_refs: 1, // used for link sharing analytics
         }),
         userIsMemberOfGroupSubscription: sessionUser
-          ? LimitationsManager.promises.userIsMemberOfGroupSubscription(
-              sessionUser
-            )
+          ? (async () =>
+              (
+                await LimitationsManager.promises.userIsMemberOfGroupSubscription(
+                  sessionUser
+                )
+              ).isMember)()
           : false,
         _flushToTpds:
           TpdsProjectFlusher.promises.flushProjectToTpdsIfNeeded(projectId),
@@ -428,6 +443,7 @@ const _ProjectController = {
         subscription,
         isTokenMember,
         isInvitedMember,
+        usedLatex,
       } = userValues
 
       // check if a user is not in the writefull-oauth-promotion, in which case they may be part of the auto trial group
@@ -473,12 +489,24 @@ const _ProjectController = {
           anonRequestToken
         )
 
-      const linkSharingChanges =
-        await SplitTestHandler.promises.getAssignmentForUser(
+      const [linkSharingChanges, linkSharingEnforcement] = await Promise.all([
+        SplitTestHandler.promises.getAssignmentForUser(
           project.owner_ref,
           'link-sharing-warning'
-        )
+        ),
+        SplitTestHandler.promises.getAssignmentForUser(
+          project.owner_ref,
+          'link-sharing-enforcement'
+        ),
+      ])
+
       if (linkSharingChanges?.variant === 'active') {
+        if (linkSharingEnforcement?.variant === 'active') {
+          await Modules.promises.hooks.fire(
+            'enforceCollaboratorLimit',
+            projectId
+          )
+        }
         if (isTokenMember) {
           // Check explicitly that the user is in read write token refs, while this could be inferred
           // from the privilege level, the privilege level of token members might later be restricted
@@ -555,12 +583,14 @@ const _ProjectController = {
         )
         const planLimit = ownerFeatures?.collaborators || 0
         const namedEditors = project.collaberator_refs?.length || 0
+        const pendingEditors = project.pendingEditor_refs?.length || 0
         const exceedAtLimit = planLimit > -1 && namedEditors >= planLimit
         const projectOpenedSegmentation = {
           projectId: project._id,
           // temporary link sharing segmentation:
           linkSharingWarning: linkSharingChanges?.variant,
           namedEditors,
+          pendingEditors,
           tokenEditors: project.tokenAccessReadAndWrite_refs?.length || 0,
           planLimit,
           exceedAtLimit,
@@ -615,21 +645,34 @@ const _ProjectController = {
         !showPersonalAccessToken &&
         splitTestAssignments['personal-access-token'].variant === 'enabled' // `?personal-access-token=enabled`
 
-      // still allow users to access project if we cant get their permissions, but disable AI feature
-      let canUseAi
-      try {
-        canUseAi = await checkUserPermissions(user, ['use-ai'])
-      } catch (err) {
-        canUseAi = false
-      }
+      let showAiErrorAssistant = false
+      if (userId && Features.hasFeature('saas')) {
+        try {
+          // exit early if the user couldnt use ai anyways, since permissions checks are expensive
+          const canUseAiOnProject =
+            user.features?.aiErrorAssistant &&
+            (privilegeLevel === PrivilegeLevels.READ_AND_WRITE ||
+              privilegeLevel === PrivilegeLevels.OWNER)
 
-      const showAiErrorAssistant =
-        userId &&
-        Features.hasFeature('saas') &&
-        user.features?.aiErrorAssistant &&
-        canUseAi &&
-        (privilegeLevel === PrivilegeLevels.READ_AND_WRITE ||
-          privilegeLevel === PrivilegeLevels.OWNER)
+          if (canUseAiOnProject) {
+            // check permissions for user and project owner, to see if they allow AI on the project
+            const permissionsResults = await Modules.promises.hooks.fire(
+              'projectAllowsCapability',
+              project,
+              userId,
+              ['use-ai']
+            )
+            const aiAllowed = permissionsResults.every(
+              result => result === true
+            )
+
+            showAiErrorAssistant = aiAllowed
+          }
+        } catch (err) {
+          // still allow users to access project if we cant get their permissions, but disable AI feature
+          showAiErrorAssistant = false
+        }
+      }
 
       const template =
         detachRole === 'detached'
@@ -673,6 +716,7 @@ const _ProjectController = {
           fontFamily: user.ace.fontFamily || 'lucida',
           lineHeight: user.ace.lineHeight || 'normal',
           overallTheme: user.ace.overallTheme,
+          mathPreview: user.ace.mathPreview,
         },
         privilegeLevel,
         anonymous,
@@ -683,6 +727,8 @@ const _ProjectController = {
           isTokenMember,
           isInvitedMember
         ),
+        roMirrorOnClientNoLocalStorage:
+          Settings.adminOnlyLogin || project.name.startsWith('Debug: '),
         languages: Settings.languages,
         learnedWords,
         editorThemes: THEME_LIST,
@@ -710,6 +756,12 @@ const _ProjectController = {
         hasTrackChangesFeature: Features.hasFeature('track-changes'),
         projectTags,
         linkSharingWarning: linkSharingChanges.variant === 'active',
+        usedLatex:
+          // only use the usedLatex value if the split test is enabled
+          splitTestAssignments['default-visual-for-beginners']?.variant ===
+          'enabled'
+            ? usedLatex
+            : null,
       })
       timer.done()
     } catch (err) {
@@ -999,7 +1051,6 @@ const ProjectController = {
   ),
   updateProjectSettings: expressify(_ProjectController.updateProjectSettings),
   userProjectsJson: expressify(_ProjectController.userProjectsJson),
-
   _buildProjectList: _ProjectController._buildProjectList,
   _buildProjectViewModel: _ProjectController._buildProjectViewModel,
   _injectProjectUsers: _ProjectController._injectProjectUsers,

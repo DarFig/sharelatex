@@ -11,6 +11,7 @@ const Features = require('./Features')
 const SessionManager = require('../Features/Authentication/SessionManager')
 const PackageVersions = require('./PackageVersions')
 const Modules = require('./Modules')
+const Errors = require('../Features/Errors/Errors')
 const {
   canRedirectToAdminDomain,
   hasAdminAccess,
@@ -18,10 +19,6 @@ const {
 const {
   addOptionalCleanupHandlerAfterDrainingConnections,
 } = require('./GracefulShutdown')
-const { expressify } = require('@overleaf/promise-utils')
-const {
-  loadAssignmentsInLocals,
-} = require('../Features/SplitTests/SplitTestMiddleware')
 
 const IEEE_BRAND_ID = Settings.ieeeBrandId
 
@@ -75,10 +72,6 @@ function getWebpackAssets(entrypoint, section) {
 }
 
 module.exports = function (webRouter, privateApiRouter, publicApiRouter) {
-  webRouter.use(
-    expressify(loadAssignmentsInLocals(['remove-window-attributes']))
-  )
-
   if (process.env.NODE_ENV === 'development') {
     // In the dev-env, delay requests until we fetched the manifest once.
     webRouter.use(function (req, res, next) {
@@ -234,12 +227,36 @@ module.exports = function (webRouter, privateApiRouter, publicApiRouter) {
   webRouter.use(function (req, res, next) {
     res.locals.translate = req.i18n.translate
 
+    const addTranslatedTextDeep = obj => {
+      if (_.isObject(obj)) {
+        if (_.has(obj, 'text')) {
+          obj.translatedText = req.i18n.translate(obj.text)
+        }
+        _.forOwn(obj, value => {
+          addTranslatedTextDeep(value)
+        })
+      }
+    }
+
+    // This function is used to add translations from the server for main
+    // navigation items because it's tricky to get them in the front end
+    // otherwise.
+    res.locals.cloneAndTranslateText = obj => {
+      const clone = _.cloneDeep(obj)
+      addTranslatedTextDeep(clone)
+      return clone
+    }
+
     // Don't include the query string parameters, otherwise Google
     // treats ?nocdn=true as the canonical version
-    const parsedOriginalUrl = new URL(req.originalUrl, Settings.siteUrl)
-    res.locals.currentUrl = parsedOriginalUrl.pathname
-    res.locals.currentUrlWithQueryParams =
-      parsedOriginalUrl.pathname + parsedOriginalUrl.search
+    try {
+      const parsedOriginalUrl = new URL(req.originalUrl, Settings.siteUrl)
+      res.locals.currentUrl = parsedOriginalUrl.pathname
+      res.locals.currentUrlWithQueryParams =
+        parsedOriginalUrl.pathname + parsedOriginalUrl.search
+    } catch (err) {
+      return next(new Errors.InvalidError())
+    }
     res.locals.capitalize = function (string) {
       if (string.length === 0) {
         return ''

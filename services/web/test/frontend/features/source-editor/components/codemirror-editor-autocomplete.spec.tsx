@@ -1,10 +1,10 @@
+import '../../../helpers/bootstrap-3'
 import { Folder } from '../../../../../types/folder'
 import { docId, mockDocContent } from '../helpers/mock-doc'
 import { mockScope } from '../helpers/mock-scope'
 import { EditorProviders } from '../../../helpers/editor-providers'
 import CodeMirrorEditor from '../../../../../frontend/js/features/source-editor/components/codemirror-editor'
 import { activeEditorLine } from '../helpers/active-editor-line'
-import { User, UserId } from '../../../../../types/user'
 import { TestContainer } from '../helpers/test-container'
 import { FC } from 'react'
 import { MetadataContext } from '@/features/ide-react/context/metadata-context'
@@ -44,6 +44,7 @@ describe('autocomplete', { scrollBehavior: false }, function () {
               {
                 _id: 'test-file-in-folder',
                 name: 'example.png',
+                hash: '42',
               },
             ],
             folders: [],
@@ -53,10 +54,12 @@ describe('autocomplete', { scrollBehavior: false }, function () {
           {
             _id: 'test-image-file',
             name: 'frog.jpg',
+            hash: '21',
           },
           {
             _id: 'uppercase-extension-image-file',
             name: 'frog.JPG',
+            hash: '22',
           },
         ],
       },
@@ -194,6 +197,7 @@ describe('autocomplete', { scrollBehavior: false }, function () {
               {
                 _id: 'test-file-in-folder',
                 name: 'example.png',
+                hash: '42',
               },
             ],
             folders: [],
@@ -203,6 +207,7 @@ describe('autocomplete', { scrollBehavior: false }, function () {
           {
             _id: 'test-image-file',
             name: 'frog.jpg',
+            hash: '43',
           },
         ],
       },
@@ -758,9 +763,9 @@ describe('autocomplete', { scrollBehavior: false }, function () {
 
     window.metaAttributesCache.set('ol-showSymbolPalette', true)
     const user = {
-      id: '123abd' as UserId,
+      id: '123abd',
       email: 'testuser@example.com',
-    } as User
+    }
     cy.mount(
       <TestContainer>
         <EditorProviders user={user} scope={scope}>

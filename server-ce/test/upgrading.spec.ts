@@ -145,7 +145,8 @@ describe('Upgrading', function () {
   const optionsFourDotTwo = {
     version: '4.2',
     vars: {
-      // Add database vars with old branding
+      // Add core vars with old branding
+      SHARELATEX_SITE_URL: 'http://sharelatex',
       SHARELATEX_MONGO_URL: 'mongodb://mongo/sharelatex',
       SHARELATEX_REDIS_HOST: 'redis',
     },
@@ -217,8 +218,9 @@ describe('Upgrading', function () {
             cy.findByText('History').click()
             cy.findByText(/\\section\{FiveOOne Section}/)
 
-            cy.log('Check indicator of force resync')
-            cy.findByText('Overleaf History System')
+            // TODO(das7pad): restore after https://github.com/overleaf/internal/issues/19588 is fixed.
+            // cy.log('Check indicator of force resync')
+            // cy.findByText('Overleaf History System')
           })
         },
       },

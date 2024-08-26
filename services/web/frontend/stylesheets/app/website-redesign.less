@@ -1,5 +1,9 @@
 @cta-card-bg-color: var(--dark-jungle-green);
 
+.website-redesign-overflow-unset {
+  overflow: unset !important;
+}
+
 .website-redesign {
   // hero section of features, enterprises, and universities will have an image that will overflow the page
   overflow-x: hidden;
@@ -771,7 +775,7 @@
     }
 
     .quote-card-link {
-      color: var(--mint-green);
+      color: var(--green-30);
     }
 
     @media (max-width: @screen-sm-max) {
@@ -830,7 +834,7 @@
     }
 
     &.green-bg {
-      background-color: var(--mint-green);
+      background-color: var(--green-30);
     }
   }
 
@@ -936,50 +940,53 @@
 
   .link-with-arrow {
     .dm-mono;
-    font-size: 1.125rem;
-    line-height: 1.333;
+    font-size: var(--font-size-04);
+    line-height: var(--line-height-03);
     font-weight: 500;
+    color: var(--green-50);
 
     i.material-symbols {
       vertical-align: middle;
       padding-bottom: 3px;
       font-size: 24px;
+      line-height: inherit;
+      margin-left: var(--spacing-02);
+    }
+
+    &:hover {
+      color: var(--green-60);
+    }
+  }
+
+  .link-monospace {
+    .dm-mono;
+    font-weight: 500;
+    color: var(--green-50);
+    &:hover {
+      color: var(--green-60);
     }
   }
 
   .green-link {
     .link-with-arrow;
-    color: var(--emerald-green);
-
-    &:hover {
-      color: var(--emerald-green-dark);
-      .right-arrow {
-        color: var(--emerald-green-dark);
-      }
-    }
+    // TODO: replace .green-link uses with .link-with-arrow
   }
 
   .inline-green-link {
-    color: var(--emerald-green);
+    color: var(--green-50);
+    padding: 0;
     text-decoration: underline;
     // text-decoration-;skip-ink is for letter with descender (like 'g' and 'y')
     // this will force underline to not skip the descender
     text-decoration-skip-ink: none;
 
     &:hover {
-      color: var(--emerald-green-dark);
+      color: var(--green-60);
     }
 
-    // for accessibility with keyboard navigation
     &:focus {
-      outline: 2px solid var(--emerald-green);
-      outline-offset: 1px;
+      &:extend(.input-focus-style);
     }
-  }
-
-  .white-link {
-    .link-with-arrow;
-    color: white;
   }
 
   .btn-blue {
@@ -993,11 +1000,38 @@
 
   .btn-primary {
     &:not([disabled]) {
-      background: var(--emerald-green);
+      background: var(--green-50);
       color: var(--white);
 
       &:hover {
-        background: var(--emerald-green-dark);
+        background: var(--green-60);
+      }
+    }
+  }
+
+  a {
+    &:focus,
+    &:focus-visible {
+      outline: 0;
+    }
+
+    &:focus-visible {
+      .box-shadow-button-input();
+    }
+
+    i {
+      vertical-align: middle;
+      margin-left: var(--spacing-02);
+      padding-bottom: 3px;
+    }
+
+    &.link-lg {
+      font-size: var(--font-size-04);
+      line-height: var(--line-height-03);
+
+      i {
+        font-size: 24px;
+        line-height: inherit;
       }
     }
   }
@@ -1014,7 +1048,7 @@
 
   .green-round-background {
     .round-background;
-    background: var(--mint-green);
+    background: var(--green-30);
   }
 
   .blue-round-background {
@@ -1087,11 +1121,7 @@
 
     @media (max-width: @screen-xs-max) {
       width: 100%;
-      // this is currently useful for responsive-button-container that has two buttons
-      // in our current implementation, all two-buttons container will have the same value (explore plan + sign up)
-      // we want to sign up to be on the right side on big screen, and on the top on small screen
-      // if we want to apply this style for different buttons scenario, we should change this
-      flex-direction: column-reverse;
+      flex-direction: column;
     }
   }
 

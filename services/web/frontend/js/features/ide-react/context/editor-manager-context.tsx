@@ -286,7 +286,10 @@ export const EditorManagerProvider: FC = ({ children }) => {
         ) {
           return
         }
-        if (update.meta.origin?.kind === 'file-restore') {
+        if (
+          update.meta.origin?.kind === 'file-restore' ||
+          update.meta.origin?.kind === 'project-restore'
+        ) {
           return
         }
         showGenericMessageModal(
@@ -538,7 +541,7 @@ export const EditorManagerProvider: FC = ({ children }) => {
     if (docError) {
       const { doc, document, error, meta } = docError
       let { editorContent } = docError
-      const message = typeof error === 'string' ? error : error?.message ?? ''
+      const message = typeof error === 'string' ? error : (error?.message ?? '')
 
       // Clear document error so that it's only handled once
       setDocError(null)

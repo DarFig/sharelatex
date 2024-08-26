@@ -144,7 +144,7 @@ if (Settings.enabledServices.includes('web')) {
 
 app.use(metrics.http.monitor(logger))
 
-Modules.registerMiddleware(app, 'appMiddleware')
+Modules.applyMiddleware(app, 'appMiddleware')
 app.use(bodyParser.urlencoded({ extended: true, limit: '2mb' }))
 app.use(bodyParser.json({ limit: Settings.max_json_request_size }))
 app.use(methodOverride())
@@ -179,7 +179,7 @@ const sessionSecrets = [
 webRouter.use(cookieParser(sessionSecrets))
 webRouter.use(CookieMetrics.middleware)
 SessionAutostartMiddleware.applyInitialMiddleware(webRouter)
-Modules.registerMiddleware(webRouter, 'sessionMiddleware', {
+Modules.applyMiddleware(webRouter, 'sessionMiddleware', {
   store: sessionStore,
 })
 webRouter.use(
@@ -294,6 +294,19 @@ webRouter.use(function addNoCacheHeader(req, res, next) {
   )
   if (isProjectFile) {
     // don't set no-cache headers on a project file, as it's immutable and can be cached (privately)
+    return next()
+  }
+  const isProjectBlob = /^\/project\/[a-f0-9]{24}\/blob\/[a-f0-9]{40}$/.test(
+    req.path
+  )
+  if (isProjectBlob) {
+    // don't set no-cache headers on a project blobs, as they are immutable and can be cached (privately)
+    return next()
+  }
+
+  const isWikiContent = /^\/learn(-scripts)?(\/|$)/i.test(req.path)
+  if (isWikiContent) {
+    // don't set no-cache headers on wiki content, as it's immutable and can be cached (publicly)
     return next()
   }
 

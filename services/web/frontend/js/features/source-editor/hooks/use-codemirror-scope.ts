@@ -61,6 +61,10 @@ import { debugConsole } from '@/utils/debugging'
 import { useMetadataContext } from '@/features/ide-react/context/metadata-context'
 import { useUserContext } from '@/shared/context/user-context'
 import { useReferencesContext } from '@/features/ide-react/context/references-context'
+import { setMathPreview } from '@/features/source-editor/extensions/math-preview'
+import { useRangesContext } from '@/features/review-panel-new/context/ranges-context'
+import { updateRanges } from '@/features/source-editor/extensions/track-changes'
+import { useThreadsContext } from '@/features/review-panel-new/context/threads-context'
 
 function useCodeMirrorScope(view: EditorView) {
   const { fileTreeData } = useFileTreeData()
@@ -96,6 +100,7 @@ function useCodeMirrorScope(view: EditorView) {
     autoPairDelimiters,
     mode,
     syntaxValidation,
+    mathPreview,
   } = userSettings
 
   const [cursorHighlights] = useScopeValue<Record<string, Highlight[]>>(
@@ -109,6 +114,9 @@ function useCodeMirrorScope(view: EditorView) {
   const [visual] = useScopeValue<boolean>('editor.showVisual')
 
   const { referenceKeys } = useReferencesContext()
+
+  const ranges = useRangesContext()
+  const threads = useThreadsContext()
 
   // build the translation phrases
   const phrases = usePhrases()
@@ -153,12 +161,15 @@ function useCodeMirrorScope(view: EditorView) {
     autoPairDelimiters,
     mode,
     syntaxValidation,
+    mathPreview,
   })
 
   const currentDocRef = useRef({
     currentDoc,
     trackChanges,
     loadingThreads,
+    threads,
+    ranges,
   })
 
   useEffect(() => {
@@ -166,6 +177,16 @@ function useCodeMirrorScope(view: EditorView) {
       currentDocRef.current.currentDoc = currentDoc
     }
   }, [view, currentDoc])
+
+  useEffect(() => {
+    currentDocRef.current.ranges = ranges
+    currentDocRef.current.threads = threads
+    if (ranges && threads) {
+      window.setTimeout(() => {
+        view.dispatch(updateRanges({ ranges, threads }))
+      })
+    }
+  }, [view, ranges, threads])
 
   const docNameRef = useRef(docName)
 
@@ -222,20 +243,26 @@ function useCodeMirrorScope(view: EditorView) {
   // listen to project metadata (commands, labels and package names) updates
   useEffect(() => {
     metadataRef.current = { ...metadataRef.current, ...metadata }
-    view.dispatch(setMetadata(metadataRef.current))
+    window.setTimeout(() => {
+      view.dispatch(setMetadata(metadataRef.current))
+    })
   }, [view, metadata])
 
   // listen to project reference keys updates
   useEffect(() => {
     metadataRef.current.referenceKeys = referenceKeys
-    view.dispatch(setMetadata(metadataRef.current))
+    window.setTimeout(() => {
+      view.dispatch(setMetadata(metadataRef.current))
+    })
   }, [view, referenceKeys])
 
   // listen to project root folder updates
   useEffect(() => {
     if (fileTreeData) {
       metadataRef.current.fileTreeData = fileTreeData
-      view.dispatch(setMetadata(metadataRef.current))
+      window.setTimeout(() => {
+        view.dispatch(setMetadata(metadataRef.current))
+      })
     }
   }, [view, fileTreeData])
 
@@ -384,6 +411,11 @@ function useCodeMirrorScope(view: EditorView) {
     settingsRef.current.syntaxValidation = syntaxValidation
     view.dispatch(setSyntaxValidation(syntaxValidation))
   }, [view, syntaxValidation])
+
+  useEffect(() => {
+    settingsRef.current.mathPreview = mathPreview
+    view.dispatch(setMathPreview(mathPreview))
+  }, [view, mathPreview])
 
   const emitSyncToPdf = useScopeEventEmitter('cursor:editor:syncToPdf')
 

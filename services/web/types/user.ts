@@ -26,7 +26,7 @@ export type Features = {
 }
 
 export type User = {
-  id: UserId
+  id: UserId | null
   isAdmin?: boolean
   email: string
   allowedFreeTrial?: boolean
@@ -35,6 +35,7 @@ export type User = {
   alphaProgram?: boolean
   betaProgram?: boolean
   labsProgram?: boolean
+  isLatexBeginner?: boolean
   signUpDate?: string // date string
   features?: Features
   refProviders?: RefProviders

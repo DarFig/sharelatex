@@ -46,12 +46,12 @@ import { PasswordStrengthOptions } from '../../../types/password-strength-option
 import { Subscription as ProjectDashboardSubscription } from '../../../types/project/dashboard/subscription'
 import { ThirdPartyIds } from '../../../types/third-party-ids'
 import { Publisher } from '../../../types/subscription/dashboard/publisher'
-import _ from 'lodash'
-import { isSplitTestEnabled } from '@/utils/splitTestUtils'
+import { DefaultNavbarMetadata } from '@/features/ui/components/types/default-navbar-metadata'
 
 export interface Meta {
   'ol-ExposedSettings': ExposedSettings
   'ol-allInReconfirmNotificationPeriods': UserEmailData[]
+  'ol-allowedExperiments': string[]
   'ol-allowedImageNames': AllowedImageName[]
   'ol-anonymous': boolean
   'ol-bootstrapVersion': 3 | 5
@@ -136,6 +136,7 @@ export interface Meta {
   'ol-memberGroupSubscriptions': MemberGroupSubscription[]
   'ol-memberOfSSOEnabledGroups': GroupSSOLinkingStatus[]
   'ol-members': MinimalUser[]
+  'ol-navbar': DefaultNavbarMetadata
   'ol-no-single-dollar': boolean
   'ol-notifications': NotificationType[]
   'ol-notificationsInstitution': InstitutionType[]
@@ -162,6 +163,7 @@ export interface Meta {
   'ol-reconfirmedViaSAML': string
   'ol-recurlyApiKey': string
   'ol-recurlySubdomain': string
+  'ol-ro-mirror-on-client-no-local-storage': boolean
   'ol-samlError': SAMLError | undefined
   'ol-settingsGroupSSO': { enabled: boolean } | undefined
   'ol-settingsPlans': Plan[]
@@ -190,13 +192,16 @@ export interface Meta {
   'ol-tags': Tag[]
   'ol-teamInvites': TeamInvite[]
   'ol-thirdPartyIds': ThirdPartyIds
-  'ol-translationLoadErrorMessage': string
   'ol-translationIoNotLoaded': string
-  'ol-translationUnableToJoin': string
+  'ol-translationLoadErrorMessage': string
   'ol-translationMaintenance': string
+  'ol-translationUnableToJoin': string
   'ol-useShareJsHash': boolean
+  'ol-usedLatex': 'never' | 'occasionally' | 'often' | undefined
   'ol-user': User
   'ol-userAffiliations': Affiliation[]
+  'ol-userCanExtendTrial': boolean
+  'ol-userCanNotStartRequestedTrial': boolean
   'ol-userEmails': UserEmailData[]
   'ol-userSettings': UserSettings
   'ol-user_id': string | undefined
@@ -204,6 +209,7 @@ export interface Meta {
   'ol-usersBestSubscription': ProjectDashboardSubscription | undefined
   'ol-usersEmail': string | undefined
   'ol-validationStatus': ValidationStatus
+  'ol-websiteRedesignPlansVariant': 'default' | 'light-design' | 'new-design'
   'ol-wikiEnabled': boolean
   'ol-writefullCssUrl': string
   'ol-writefullEnabled': boolean
@@ -245,30 +251,4 @@ export default function getMeta<T extends keyof Meta>(name: T): Meta[T] {
   }
   window.metaAttributesCache.set(name, value)
   return value
-}
-
-function convertMetaToWindowAttributes() {
-  Array.from(document.querySelectorAll('meta[name^="ol-"]'))
-    .map(element => (element as HTMLMetaElement).name)
-    // process short labels before long ones:
-    // e.g. assign 'foo' before 'foo.bar'
-    .sort()
-    .forEach(nameWithNamespace => {
-      const label = nameWithNamespace.slice('ol-'.length)
-      // @ts-ignore
-      _.set(window, label, getMeta(nameWithNamespace))
-    })
-}
-
-// Deduplicate warning, the bootstrap-3 bundle ships its own copy of this module.
-if (!window.warnedAboutWindowAttributeRemoval) {
-  window.warnedAboutWindowAttributeRemoval = true
-  // Notify any extension developers about the upcoming removal of window attributes.
-  // eslint-disable-next-line no-console
-  console.warn(
-    'overleaf.com: We are sunsetting window properties like "window.project_id". If you need access to any of these, please reach out to support@overleaf.com to discuss options.'
-  )
-}
-if (!isSplitTestEnabled('remove-window-attributes')) {
-  convertMetaToWindowAttributes()
 }

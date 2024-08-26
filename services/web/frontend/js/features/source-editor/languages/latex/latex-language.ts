@@ -52,6 +52,19 @@ const typeMap: Record<string, string[]> = {
   Input: ['$CommandTooltipCommand'],
   Ref: ['$CommandTooltipCommand'],
   UrlCommand: ['$CommandTooltipCommand'],
+  // text formatting commands that can be toggled via the toolbar
+  TextBoldCommand: ['$ToggleTextFormattingCommand'],
+  TextItalicCommand: ['$ToggleTextFormattingCommand'],
+  // text formatting commands that cannot be toggled via the toolbar
+  TextSmallCapsCommand: ['$OtherTextFormattingCommand'],
+  TextTeletypeCommand: ['$OtherTextFormattingCommand'],
+  TextMediumCommand: ['$OtherTextFormattingCommand'],
+  TextSansSerifCommand: ['$OtherTextFormattingCommand'],
+  TextSuperscriptCommand: ['$OtherTextFormattingCommand'],
+  TextSubscriptCommand: ['$OtherTextFormattingCommand'],
+  StrikeOutCommand: ['$OtherTextFormattingCommand'],
+  EmphasisCommand: ['$OtherTextFormattingCommand'],
+  UnderlineCommand: ['$OtherTextFormattingCommand'],
 }
 
 export const LaTeXLanguage = LRLanguage.define({
@@ -129,7 +142,10 @@ export const LaTeXLanguage = LRLanguage.define({
           ) {
             types.push('$TextArgument')
           }
-        } else if (type.name.endsWith('Environment')) {
+        } else if (
+          type.name.endsWith('Environment') &&
+          !['NewEnvironment', 'RenewEnvironment'].includes(type.name)
+        ) {
           types.push('$Environment')
         } else if (type.name.endsWith('Brace')) {
           types.push('$Brace')

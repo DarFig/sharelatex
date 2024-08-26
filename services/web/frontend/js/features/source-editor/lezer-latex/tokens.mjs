@@ -34,6 +34,7 @@ import {
   IncludeGraphicsCtrlSeq,
   CaptionCtrlSeq,
   DefCtrlSeq,
+  LetCtrlSeq,
   LeftCtrlSeq,
   RightCtrlSeq,
   NewCommandCtrlSeq,
@@ -85,6 +86,17 @@ import {
   hasMoreArguments,
   hasMoreArgumentsOrOptionals,
   endOfArgumentsAndOptionals,
+  TextBoldCtrlSeq,
+  TextItalicCtrlSeq,
+  TextSmallCapsCtrlSeq,
+  TextTeletypeCtrlSeq,
+  TextMediumCtrlSeq,
+  TextSansSerifCtrlSeq,
+  TextSuperscriptCtrlSeq,
+  TextSubscriptCtrlSeq,
+  TextStrikeOutCtrlSeq,
+  EmphasisCtrlSeq,
+  UnderlineCtrlSeq,
 } from './latex.terms.mjs'
 
 const MAX_ARGUMENT_LOOKAHEAD = 100
@@ -543,6 +555,7 @@ const otherKnowncommands = {
   '\\includegraphics': IncludeGraphicsCtrlSeq,
   '\\caption': CaptionCtrlSeq,
   '\\def': DefCtrlSeq,
+  '\\let': LetCtrlSeq,
   '\\left': LeftCtrlSeq,
   '\\right': RightCtrlSeq,
   '\\newcommand': NewCommandCtrlSeq,
@@ -577,6 +590,17 @@ const otherKnowncommands = {
   '\\bottomrule': BottomRuleCtrlSeq,
   '\\multicolumn': MultiColumnCtrlSeq,
   '\\parbox': ParBoxCtrlSeq,
+  '\\textbf': TextBoldCtrlSeq,
+  '\\textit': TextItalicCtrlSeq,
+  '\\textsc': TextSmallCapsCtrlSeq,
+  '\\texttt': TextTeletypeCtrlSeq,
+  '\\textmd': TextMediumCtrlSeq,
+  '\\textsf': TextSansSerifCtrlSeq,
+  '\\textsuperscript': TextSuperscriptCtrlSeq,
+  '\\textsubscript': TextSubscriptCtrlSeq,
+  '\\sout': TextStrikeOutCtrlSeq,
+  '\\emph': EmphasisCtrlSeq,
+  '\\underline': UnderlineCtrlSeq,
 }
 // specializer for control sequences
 // return new tokens for specific control sequences
@@ -673,6 +697,7 @@ const verbatimEnvNames = new Set([
   'minted',
   'Verbatim',
   'lstlisting',
+  'tcblisting',
   'codeexample',
   'comment',
 ])

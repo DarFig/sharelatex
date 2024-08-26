@@ -2,7 +2,7 @@ const {
   callbackifyAll,
   promiseMapWithLimit,
 } = require('@overleaf/promise-utils')
-const { ObjectId } = require('mongodb')
+const { ObjectId } = require('mongodb-legacy')
 const Settings = require('@overleaf/settings')
 const logger = require('@overleaf/logger')
 const { fetchJson } = require('@overleaf/fetch-utils')
@@ -15,7 +15,6 @@ const NotificationsHandler = require('../Notifications/NotificationsHandler')
 const SubscriptionLocator = require('../Subscription/SubscriptionLocator')
 const { Institution } = require('../../models/Institution')
 const { Subscription } = require('../../models/Subscription')
-const Queues = require('../../infrastructure/Queues')
 const OError = require('@overleaf/o-error')
 
 const ASYNC_LIMIT = parseInt(process.env.ASYNC_LIMIT, 10) || 5
@@ -253,14 +252,6 @@ const InstitutionsManager = {
     await promiseMapWithLimit(ASYNC_LIMIT, users, user =>
       affiliateUserByReversedHostname(user, reversedHostname)
     )
-  },
-
-  /**
-   * Enqueue a job for adding affiliations for when a domain is confirmed
-   */
-  async confirmDomain(hostname) {
-    const queue = Queues.getQueue('confirm-institution-domain')
-    await queue.add({ hostname })
   },
 
   async fetchV1Data(institution) {

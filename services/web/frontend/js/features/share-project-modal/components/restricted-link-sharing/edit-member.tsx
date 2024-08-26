@@ -124,9 +124,17 @@ export default function EditMember({
       <FormGroup className="project-member">
         <Col xs={7}>
           <div className="project-member-email-icon">
-            <Icon type={shouldWarnMember() ? 'warning' : 'user'} fw />
+            <Icon
+              type={
+                shouldWarnMember() || member.pendingEditor ? 'warning' : 'user'
+              }
+              fw
+            />
             <div className="email-warning">
               {member.email}
+              {member.pendingEditor && (
+                <div className="subtitle">Pending editor</div>
+              )}
               {shouldWarnMember() && (
                 <div className="subtitle">
                   {t('will_lose_edit_access_on_date', {
@@ -150,7 +158,9 @@ export default function EditMember({
           <SelectPrivilege
             value={privileges}
             handleChange={value => {
-              value && handlePrivilegeChange(value.key)
+              if (value) {
+                handlePrivilegeChange(value.key)
+              }
             }}
             canAddCollaborators={canAddCollaborators}
           />

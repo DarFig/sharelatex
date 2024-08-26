@@ -397,6 +397,10 @@ lint: lint_eslint
 lint_eslint:
 	npm run lint
 
+lint: lint_stylelint
+lint_stylelint:
+	npm run lint:styles
+
 lint: lint_pug
 lint_pug:
 	bin/lint_pug_templates
@@ -419,13 +423,17 @@ lint: lint_flag_res_send_usage
 lint_flag_res_send_usage:
 	bin/lint_flag_res_send_usage
 
+lint: lint_overleafModuleImports
+lint_overleafModuleImports:
+	node scripts/check_overleafModuleImports.js
+
 lint: typecheck_frontend
 typecheck_frontend:
-	npx -p typescript tsc --noEmit
+	npm run --silent type-check
 
 lint: typecheck_backend
 typecheck_backend:
-	npx -p typescript tsc -p tsconfig.backend.json --noEmit
+	npm run --silent type-check:backend
 
 lint_in_docker:
 	$(RUN_LINT_FORMAT) make lint -j2 --output-sync

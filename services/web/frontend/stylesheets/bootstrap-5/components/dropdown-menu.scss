@@ -104,6 +104,18 @@
   }
 }
 
+.dropdown-item-leading-icon,
+.dropdown-item-trailing-icon {
+  .material-symbols {
+    vertical-align: top;
+  }
+}
+
+.dropdown-item-leading-icon-empty {
+  display: inline-block;
+  width: 20px;
+}
+
 // description text should look disabled when the dropdown item is disabled
 .dropdown-item.disabled .dropdown-item-description,
 .dropdown-item[aria-disabled='true'] .dropdown-item-description {
@@ -147,6 +159,6 @@
   overflow-x: hidden;
 }
 
-.dropdown-item--highlighted {
+.dropdown-item-highlighted {
   background-color: var(--bg-light-secondary);
 }

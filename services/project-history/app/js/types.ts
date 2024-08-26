@@ -1,4 +1,5 @@
 import { HistoryRanges } from '../../../document-updater/app/js/types'
+import { LinkedFileData, RawOrigin } from 'overleaf-editor-core/lib/types'
 
 export type Update =
   | TextUpdate
@@ -7,8 +8,15 @@ export type Update =
   | RenameUpdate
   | DeleteCommentUpdate
   | SetCommentStateUpdate
+  | SetFileMetadataOperation
   | ResyncProjectStructureUpdate
   | ResyncDocContentUpdate
+
+export type ProjectStructureUpdate =
+  | AddDocUpdate
+  | AddFileUpdate
+  | RenameUpdate
+  | SetFileMetadataOperation
 
 export type UpdateMeta = {
   user_id: string
@@ -38,6 +46,12 @@ export type SetCommentStateUpdate = {
   meta: UpdateMeta
 }
 
+export type SetFileMetadataOperation = {
+  pathname: string
+  meta: UpdateMeta
+  metadata: LinkedFileData | object
+}
+
 export type DeleteCommentUpdate = {
   pathname: string
   deleteComment: string
@@ -61,6 +75,8 @@ export type AddFileUpdate = ProjectUpdateBase & {
   pathname: string
   file: string
   url: string
+  hash: string
+  metadata?: LinkedFileData
 }
 
 export type RenameUpdate = ProjectUpdateBase & {
@@ -145,10 +161,6 @@ export type UpdateWithBlob<T extends Update = Update> = {
     : never
 }
 
-export type RawOrigin = {
-  kind: string
-}
-
 export type TrackingProps = {
   type: 'insert' | 'delete'
   userId: string
@@ -199,6 +211,8 @@ export type File = {
   file: string
   url: string
   path: string
+  _hash: string
+  metadata?: LinkedFileData
 }
 
 export type Entity = Doc | File

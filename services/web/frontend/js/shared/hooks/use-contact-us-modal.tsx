@@ -5,9 +5,10 @@ const [contactUsModalModules] = importOverleafModules('contactUsModal')
 const ContactUsModal: JSXElementConstructor<{
   show: boolean
   handleHide: () => void
+  autofillProjectUrl: boolean
 }> = contactUsModalModules?.import.default
 
-export const useContactUsModal = () => {
+export const useContactUsModal = (options = { autofillProjectUrl: true }) => {
   const [show, setShow] = useState(false)
 
   const hideModal = useCallback((event?: Event) => {
@@ -21,7 +22,11 @@ export const useContactUsModal = () => {
   }, [])
 
   const modal = ContactUsModal && (
-    <ContactUsModal show={show} handleHide={hideModal} />
+    <ContactUsModal
+      show={show}
+      handleHide={hideModal}
+      autofillProjectUrl={options.autofillProjectUrl}
+    />
   )
 
   return { modal, hideModal, showModal }

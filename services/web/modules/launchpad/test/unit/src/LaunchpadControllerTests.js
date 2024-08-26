@@ -365,7 +365,9 @@ describe('LaunchpadController', function () {
             {
               $set: {
                 isAdmin: true,
-                emails: [{ email: this.user.email }],
+                emails: [
+                  { email: this.user.email, reversedHostname: 'moc.elpmaxe' },
+                ],
               },
             }
           )
@@ -696,7 +698,6 @@ describe('LaunchpadController', function () {
     describe('when overleaf', function () {
       beforeEach(function () {
         this.Settings.overleaf = { one: 1 }
-        this.Settings.createV1AccountOnLogin = true
         this._atLeastOneAdminExists.resolves(false)
         this.email = 'someone@example.com'
         this.password = 'a_really_bad_password'
@@ -750,7 +751,9 @@ describe('LaunchpadController', function () {
             {
               $set: {
                 isAdmin: true,
-                emails: [{ email: this.user.email }],
+                emails: [
+                  { email: this.user.email, reversedHostname: 'moc.elpmaxe' },
+                ],
               },
             }
           )
@@ -824,8 +827,12 @@ describe('LaunchpadController', function () {
           .calledWith(
             { _id: this.user._id },
             {
-              $set: { isAdmin: true },
-              emails: [{ email: this.user.email }],
+              $set: {
+                isAdmin: true,
+                emails: [
+                  { email: this.user.email, reversedHostname: 'moc.elpmaxe' },
+                ],
+              },
             }
           )
           .should.equal(true)

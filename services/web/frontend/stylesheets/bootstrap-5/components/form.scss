@@ -2,9 +2,11 @@
   @function form-check-box-svg($color) {
     @return url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='none' stroke='#{$color}' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/></svg>");
   }
+
   @function form-check-radio-svg($color) {
     @return url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'><circle r='2' fill='#{$color}'/></svg>");
   }
+
   @function form-check-indeterminate-svg($color) {
     @return url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path fill='none' stroke='#{$color}' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/></svg>");
   }
@@ -88,7 +90,7 @@
 }
 
 .form-group {
-  margin-bottom: var(--spacing-06);
+  margin-bottom: $form-group-margin-bottom;
 }
 
 .form-control-wrapper {
@@ -115,9 +117,12 @@
 
   .form-control-start-icon {
     left: 0;
+    padding-left: calc(var(--form-control-padding-x) + var(--bs-border-width));
   }
+
   .form-control-end-icon {
     right: 0;
+    padding-right: calc(var(--form-control-padding-x) + var(--bs-border-width));
   }
 
   --icon-width: 20px;
@@ -132,14 +137,6 @@
   &.form-control-wrapper-lg {
     --form-control-padding-x: var(--spacing-05);
     --form-control-icon-offset-y: var(--spacing-05);
-  }
-
-  .form-control-start-icon {
-    padding-left: calc(var(--form-control-padding-x) + var(--bs-border-width));
-  }
-
-  .form-control-end-icon {
-    padding-right: calc(var(--form-control-padding-x) + var(--bs-border-width));
   }
 
   .form-control-offset-start {
@@ -159,16 +156,16 @@
 
 .form-control,
 .form-select {
-  &:focus-visible {
+  &:focus,
+  &:invalid:focus,
+  &.is-invalid:focus,
+  &:focus-visible,
+  &:invalid:focus-visible,
+  &.is-invalid:focus-visible {
     color: $input-focus-color;
     background-color: $input-focus-bg;
     outline: 0;
     border-color: $input-focus-border-color;
     box-shadow: $input-focus-box-shadow;
-  }
-
-  &.is-invalid:focus-visible {
-    border-color: $form-feedback-invalid-color;
-    box-shadow: 0 0 0 2px var(--red-30);
   }
 }

@@ -16,6 +16,7 @@ const EditorRealTimeController = require('../Editor/EditorRealTimeController')
 const ChatManager = require('../Chat/ChatManager')
 const OError = require('@overleaf/o-error')
 const ProjectGetter = require('../Project/ProjectGetter')
+const ProjectEntityHandler = require('../Project/ProjectEntityHandler')
 
 const RestoreManager = {
   async restoreFileFromV2(userId, projectId, version, pathname) {
@@ -49,7 +50,7 @@ const RestoreManager = {
     )
   },
 
-  async revertFile(userId, projectId, version, pathname) {
+  async revertFile(userId, projectId, version, pathname, options = {}) {
     const project = await ProjectGetter.promises.getProject(projectId, {
       overleaf: true,
     })
@@ -85,7 +86,7 @@ const RestoreManager = {
     )
     const updateAtVersion = updates.find(update => update.toV === version)
 
-    const origin = {
+    const origin = options.origin || {
       kind: 'file-restore',
       path: pathname,
       version,
@@ -222,8 +223,8 @@ const RestoreManager = {
     try {
       return await addEntityWithName(basename)
     } catch (error) {
-      if (error instanceof Errors.InvalidNameError) {
-        // likely a duplicate name, so try with a prefix
+      if (error instanceof Errors.DuplicateNameError) {
+        // Duplicate name, so try with a prefix
         const date = moment(new Date()).format('Do MMM YY H:mm:ss')
         // Move extension to the end so the file type is preserved
         const extension = Path.extname(basename)
@@ -235,6 +236,61 @@ const RestoreManager = {
         return await addEntityWithName(basename)
       } else {
         throw error
+      }
+    }
+  },
+
+  async revertProject(userId, projectId, version) {
+    const project = await ProjectGetter.promises.getProject(projectId, {
+      overleaf: true,
+    })
+    if (!project?.overleaf?.history?.rangesSupportEnabled) {
+      throw new OError('project does not have ranges support', { projectId })
+    }
+
+    // Get project paths at version
+    const pathsAtPastVersion = await RestoreManager._getProjectPathsAtVersion(
+      projectId,
+      version
+    )
+
+    const updates = await RestoreManager._getUpdatesFromHistory(
+      projectId,
+      version
+    )
+    const updateAtVersion = updates.find(update => update.toV === version)
+
+    const origin = {
+      kind: 'project-restore',
+      version,
+      timestamp: new Date(updateAtVersion.meta.end_ts).toISOString(),
+    }
+
+    for (const pathname of pathsAtPastVersion) {
+      await RestoreManager.revertFile(userId, projectId, version, pathname, {
+        origin,
+      })
+    }
+
+    const entitiesAtLiveVersion =
+      await ProjectEntityHandler.promises.getAllEntities(projectId)
+
+    const trimLeadingSlash = path => path.replace(/^\//, '')
+
+    const pathsAtLiveVersion = entitiesAtLiveVersion.docs
+      .map(doc => doc.path)
+      .concat(entitiesAtLiveVersion.files.map(file => file.path))
+      .map(trimLeadingSlash)
+
+    // Delete files that were not present at the reverted version
+    for (const path of pathsAtLiveVersion) {
+      if (!pathsAtPastVersion.includes(path)) {
+        await EditorController.promises.deleteEntityWithPath(
+          projectId,
+          path,
+          origin,
+          userId
+        )
       }
     }
   },
@@ -257,6 +313,12 @@ const RestoreManager = {
     const url = `${Settings.apis.project_history.url}/project/${projectId}/updates?before=${version}&min_count=1`
     const res = await fetchJson(url)
     return res.updates
+  },
+
+  async _getProjectPathsAtVersion(projectId, version) {
+    const url = `${Settings.apis.project_history.url}/project/${projectId}/paths/version/${version}`
+    const res = await fetchJson(url)
+    return res.paths
   },
 }
 

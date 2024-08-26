@@ -19,7 +19,7 @@ import OLForm from '@/features/ui/components/ol/ol-form'
 import OLFormGroup from '@/features/ui/components/ol/ol-form-group'
 import OLFormLabel from '@/features/ui/components/ol/ol-form-label'
 import OLButton from '@/features/ui/components/ol/ol-button'
-import OLNotification from '@/features/ui/components/ol/ol-notification'
+import Notification from '@/shared/components/notification'
 
 type EditTagModalProps = {
   id: string
@@ -100,7 +100,7 @@ export function EditTagModal({ id, tag, onEdit, onClose }: EditTagModalProps) {
               type="text"
               placeholder="Tag Name"
               name="new-tag-name"
-              value={newTagName === undefined ? tag.name ?? '' : newTagName}
+              value={newTagName === undefined ? (tag.name ?? '') : newTagName}
               required
               onChange={e => setNewTagName(e.target.value)}
             />
@@ -113,12 +113,12 @@ export function EditTagModal({ id, tag, onEdit, onClose }: EditTagModalProps) {
           </OLFormGroup>
         </OLForm>
         {validationError && (
-          <OLNotification type="error" content={validationError} />
+          <Notification content={validationError} type="error" />
         )}
         {isError && (
-          <OLNotification
-            type="error"
+          <Notification
             content={t('generic_something_went_wrong')}
+            type="error"
           />
         )}
       </OLModalBody>

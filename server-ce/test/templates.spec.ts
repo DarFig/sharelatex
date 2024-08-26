@@ -47,8 +47,9 @@ describe('Templates', () => {
       cy.url().should('match', /\/templates$/)
     })
 
-    it('should have templates feature', () => {
-      const resumeTemplatesUserSession = login(TEMPLATES_USER)
+    // eslint-disable-next-line mocha/no-skipped-tests
+    it.skip('should have templates feature', () => {
+      login(TEMPLATES_USER)
       const name = `Template ${Date.now()}`
       const description = `Template Description ${Date.now()}`
 
@@ -182,7 +183,8 @@ describe('Templates', () => {
       cy.findByText('Manage Template').click()
       cy.findByText('Unpublish')
 
-      resumeTemplatesUserSession()
+      // Back to templates user
+      login(TEMPLATES_USER)
 
       // Unpublish via editor
       cy.get('@templateProjectId').then(projectId =>

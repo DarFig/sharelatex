@@ -10,6 +10,7 @@ const MODULE_BASE_PATH = Path.join(__dirname, '/../../../modules')
 const _modules = []
 let _modulesLoaded = false
 const _hooks = {}
+const _middleware = {}
 let _viewIncludes = {}
 
 function modules() {
@@ -40,9 +41,19 @@ function loadModules() {
         `${moduleName}: module.viewIncludes moved into Settings.viewIncludes`
       )
     }
+    if (loadedModule.dependencies) {
+      for (const dependency of loadedModule.dependencies) {
+        if (!Settings.moduleImportSequence.includes(dependency)) {
+          throw new Error(
+            `Module '${dependency}' listed as a dependency of '${moduleName}' is missing in the moduleImportSequence. Please also verify that it is available in the current environment.`
+          )
+        }
+      }
+    }
   }
   _modulesLoaded = true
   attachHooks()
+  attachMiddleware()
 }
 
 function applyRouter(webRouter, privateApiRouter, publicApiRouter) {
@@ -68,11 +79,17 @@ function applyNonCsrfRouter(webRouter, privateApiRouter, publicApiRouter) {
   }
 }
 
+async function start() {
+  for (const module of modules()) {
+    await module.start?.()
+  }
+}
+
 function loadViewIncludes(app) {
   _viewIncludes = Views.compileViewIncludes(app)
 }
 
-function registerMiddleware(appOrRouter, middlewareName, options) {
+function applyMiddleware(appOrRouter, middlewareName, options) {
   if (!middlewareName) {
     throw new Error(
       'middleware name must be provided to register module middleware'
@@ -111,11 +128,9 @@ function linkedFileAgentsIncludes() {
 
 function attachHooks() {
   for (const module of modules()) {
-    if (module.hooks != null) {
-      for (const hook in module.hooks) {
-        const method = module.hooks[hook]
-        attachHook(hook, method)
-      }
+    for (const hook in module.hooks || {}) {
+      const method = module.hooks[hook]
+      attachHook(hook, method)
     }
   }
 }
@@ -125,6 +140,18 @@ function attachHook(name, method) {
     _hooks[name] = []
   }
   _hooks[name].push(method)
+}
+
+function attachMiddleware() {
+  for (const module of modules()) {
+    for (const middleware in module.middleware || {}) {
+      const method = module.middleware[middleware]
+      if (_middleware[middleware] == null) {
+        _middleware[middleware] = []
+      }
+      _middleware[middleware].push(method)
+    }
+  }
 }
 
 function fireHook(name, ...rest) {
@@ -146,6 +173,14 @@ function fireHook(name, ...rest) {
   })
 }
 
+function getMiddleware(name) {
+  // ensure that modules are loaded if we need to call a middleware
+  if (!_modulesLoaded) {
+    loadModules()
+  }
+  return _middleware[name] || []
+}
+
 module.exports = {
   applyNonCsrfRouter,
   applyRouter,
@@ -153,11 +188,13 @@ module.exports = {
   loadViewIncludes,
   moduleIncludes,
   moduleIncludesAvailable,
-  registerMiddleware,
+  applyMiddleware,
+  start,
   hooks: {
     attach: attachHook,
     fire: fireHook,
   },
+  middleware: getMiddleware,
   promises: {
     hooks: {
       fire: promisify(fireHook),

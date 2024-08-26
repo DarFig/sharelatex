@@ -72,6 +72,7 @@ const UserSchema = new Schema(
     lastLoggedIn: { type: Date },
     lastLoginIp: { type: String, default: '' },
     lastPrimaryEmailCheck: { type: Date },
+    lastTrial: { type: Date },
     loginCount: { type: Number, default: 0 },
     holdingAccount: { type: Boolean, default: false },
     ace: {
@@ -86,6 +87,7 @@ const UserSchema = new Schema(
       syntaxValidation: { type: Boolean },
       fontFamily: { type: String },
       lineHeight: { type: String },
+      mathPreview: { type: Boolean, default: true },
     },
     features: {
       collaborators: {

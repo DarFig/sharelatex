@@ -1,5 +1,6 @@
 // Needed since eslint gets confused by mocha-each
 /* eslint-disable mocha/prefer-arrow-callback */
+import '../../../helpers/bootstrap-3'
 import { FC } from 'react'
 import { EditorProviders } from '../../../helpers/editor-providers'
 import CodemirrorEditor from '../../../../../frontend/js/features/source-editor/components/codemirror-editor'
@@ -123,20 +124,17 @@ describe('<CodeMirrorEditor/> in Visual mode', function () {
     cy.get('.cm-content').should('have.text', ' testtest')
   })
 
-  forEach(['textbf', 'textit', 'underline']).it(
-    'handles \\%s text',
-    function (command) {
-      cy.get('@first-line').type(`\\${command}{`)
-      cy.get('@first-line').should('have.text', `{}`)
-      cy.get('@first-line').type('{rightArrow} ')
-      cy.get('@first-line').should('have.text', '{} ')
-      cy.get('@first-line').type('{Backspace}{leftArrow}test text')
-      cy.get('@first-line').should('have.text', '{test text}')
-      cy.get('@first-line').type('{rightArrow} foo')
-      cy.get('@first-line').should('have.text', 'test text foo') // no braces
-      cy.get('@first-line').find(`.ol-cm-command-${command}`)
-    }
-  )
+  forEach(['textbf', 'textit']).it('handles \\%s text', function (command) {
+    cy.get('@first-line').type(`\\${command}{`)
+    cy.get('@first-line').should('have.text', `{}`)
+    cy.get('@first-line').type('{rightArrow} ')
+    cy.get('@first-line').should('have.text', '{} ')
+    cy.get('@first-line').type('{Backspace}{leftArrow}test text')
+    cy.get('@first-line').should('have.text', '{test text}')
+    cy.get('@first-line').type('{rightArrow} foo')
+    cy.get('@first-line').should('have.text', 'test text foo') // no braces
+    cy.get('@first-line').find(`.ol-cm-command-${command}`)
+  })
 
   forEach([
     'part',
@@ -170,6 +168,7 @@ describe('<CodeMirrorEditor/> in Visual mode', function () {
     'textsuperscript',
     'sout',
     'emph',
+    'underline',
     'url',
     'caption',
   ]).it('handles \\%s text', function (command) {
